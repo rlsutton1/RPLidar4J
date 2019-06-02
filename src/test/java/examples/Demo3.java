@@ -4,6 +4,7 @@ import ev3dev.sensors.slamtec.RPLidarA1;
 import ev3dev.sensors.slamtec.RPLidarProviderListener;
 import ev3dev.sensors.slamtec.model.Scan;
 import ev3dev.sensors.slamtec.service.RpLidarDeviceInfo;
+import ev3dev.sensors.slamtec.service.RpLidarHeath;
 import lombok.extern.slf4j.Slf4j;
 
 public @Slf4j class Demo3
@@ -32,6 +33,13 @@ public @Slf4j class Demo3
 			@Override
 			public void deviceInfo(RpLidarDeviceInfo info)
 			{
+			}
+
+			@Override
+			public void deviceHealth(RpLidarHeath health)
+			{
+				// TODO Auto-generated method stub
+
 			}
 		});
 		for (int x = 0; x <= 10; x++)

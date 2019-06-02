@@ -72,4 +72,11 @@ public class RPLidarA1 implements RPLidarProvider
 	{
 		return rpLidarProvider.getNextScan();
 	}
+
+	@Override
+	public void forceContinuousScanning() throws RPLidarA1ServiceException
+	{
+		rpLidarProvider.forceContinuousScanning();
+
+	}
 }

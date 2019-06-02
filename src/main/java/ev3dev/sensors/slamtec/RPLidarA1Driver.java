@@ -47,6 +47,7 @@ class RPLidarA1Driver implements RPLidarProvider, RpLidarListener
 	public void init() throws RPLidarA1ServiceException, InterruptedException
 	{
 
+		log.error("Init called in RPLIdarA1Driver");
 		if (log.isInfoEnabled())
 		{
 			log.info("Connecting with: {}", this.USBPort);
@@ -84,23 +85,50 @@ class RPLidarA1Driver implements RPLidarProvider, RpLidarListener
 			@Override
 			public void deviceInfo(RpLidarDeviceInfo info)
 			{
+				System.out.println("Device info...");
+				System.out.println("DEVICE INFO");
+				System.out.println("  model = " + info.model);
+				System.out.println("  firmware_minor = " + info.firmware_minor);
+				System.out.println("  firmware_major = " + info.firmware_major);
+				System.out.println("  hardware = " + info.hardware);
+
+				final StringBuilder sb = new StringBuilder();
+				sb.append("  Serial = ");
+				for (int i = 0; i < info.serialNumber.length; i++)
+				{
+					sb.append(String.format("%02X", info.serialNumber[i]));
+					if ((i + 1) % 4 == 0)
+						sb.append(" ");
+				}
+				System.out.println(sb.toString());
 				// by waiting for the device info we can be sure that the
 				// RPLidar has reset
 				latch.countDown();
+			}
+
+			@Override
+			public void deviceHealth(RpLidarHeath health)
+			{
+				System.out.println("Health " + health.status + " error: " + health.error_code);
+
 			}
 		};
 		addListener(listener);
 
 		driver.sendGetInfo();
 
+		driver.sendGetHealth();
+
 		if (!latch.await(5, TimeUnit.SECONDS))
 		{
 			log.error("Failed to start scanner, retrying init()");
 			driver.shutdown();
 			TimeUnit.MILLISECONDS.sleep(500);
+			removeListener(listener);
 			init();
 		}
-		removeListener(listener);
+		TimeUnit.SECONDS.sleep(1);
+		log.error("Init of RPLidar successful");
 
 	}
 
@@ -137,6 +165,13 @@ class RPLidarA1Driver implements RPLidarProvider, RpLidarListener
 			public void deviceInfo(RpLidarDeviceInfo info)
 			{
 			}
+
+			@Override
+			public void deviceHealth(RpLidarHeath health)
+			{
+				// TODO Auto-generated method stub
+
+			}
 		};
 		addListener(listener);
 
@@ -152,14 +187,23 @@ class RPLidarA1Driver implements RPLidarProvider, RpLidarListener
 		flag = false;
 		distancesTemp.clear();
 		driver.sendScan();
-		log.warn("Initiated continous scanning");
+		log.error("Initiated continous scanning");
+	}
+
+	@Override
+	public void forceContinuousScanning() throws RPLidarA1ServiceException
+	{
+		flag = false;
+		distancesTemp.clear();
+		driver.sendForceScan();
+		log.error("Initiated continous scanning");
 	}
 
 	@Override
 	public void stopScanning() throws RPLidarA1ServiceException
 	{
 		driver.sendStop();
-		log.warn("Initiated continous scanning");
+		log.error("Initiated continous scanning");
 	}
 
 	@Override
@@ -182,6 +226,8 @@ class RPLidarA1Driver implements RPLidarProvider, RpLidarListener
 		listenerList.remove(listener);
 	}
 
+	long start = System.currentTimeMillis();
+
 	@Override
 	public void handleMeasurement(final RpLidarMeasurement measurement)
 	{
@@ -193,15 +239,20 @@ class RPLidarA1Driver implements RPLidarProvider, RpLidarListener
 			{
 				if (measurement.start)
 				{
+
+					long end = System.currentTimeMillis();
 					synchronized (distancesTemp)
 					{
+						long currentStart = start;
+						start = end;
+
 						final List<ScanDistance> distances = new ArrayList<>();
 						distances.addAll(distancesTemp);
 						distancesTemp.clear();
 
 						for (RPLidarProviderListener listener : listenerList)
 						{
-							listener.scanFinished(new Scan(distances));
+							listener.scanFinished(new Scan(distances, currentStart, end));
 						}
 
 					}
@@ -230,7 +281,10 @@ class RPLidarA1Driver implements RPLidarProvider, RpLidarListener
 	@Override
 	public void handleDeviceHealth(RpLidarHeath health)
 	{
-
+		for (RPLidarProviderListener listener : listenerList)
+		{
+			listener.deviceHealth(health);
+		}
 	}
 
 	@Override
@@ -263,12 +317,21 @@ class RPLidarA1Driver implements RPLidarProvider, RpLidarListener
 			{
 
 			}
+
+			@Override
+			public void deviceHealth(RpLidarHeath health)
+			{
+				// TODO Auto-generated method stub
+
+			}
 		};
 		addListener(listener);
 
 		if (!latch.await(5, TimeUnit.SECONDS))
 		{
-			log.warn("Failed to get a scan");
+			ret.set(null);
+			log.error("Failed to get a scan");
+			continuousScanning();
 		}
 		removeListener(listener);
 		return ret.get();

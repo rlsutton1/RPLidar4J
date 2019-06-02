@@ -177,6 +177,11 @@ public @Slf4j class RpLidarLowLevelDriver implements SerialPortEventListener
 		sendNoPayLoad(SCAN);
 	}
 
+	public void sendForceScan()
+	{
+		sendNoPayLoad(FORCE_SCAN);
+	}
+
 	/**
 	 * Sends a STOP packet
 	 */
@@ -356,7 +361,7 @@ public @Slf4j class RpLidarLowLevelDriver implements SerialPortEventListener
 
 		int offset = 0;
 
-		if (verbose)
+		// if (verbose)
 		{
 			StringBuilder sb = new StringBuilder("parseData length = ").append(length);
 			for (int i = 0; i < length; i++)
@@ -453,7 +458,7 @@ public @Slf4j class RpLidarLowLevelDriver implements SerialPortEventListener
 			}
 			break;
 		default:
-			log.debug("Unknown packet type = 0x%02x\n", type);
+			log.error("Unknown packet type = 0x%02x\n", type);
 		}
 		return false;
 	}

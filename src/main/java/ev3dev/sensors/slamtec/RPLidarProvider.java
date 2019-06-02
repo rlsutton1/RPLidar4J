@@ -32,4 +32,6 @@ public interface RPLidarProvider
 	void removeListener(RPLidarProviderListener listener);
 
 	Scan getNextScan() throws RPLidarA1ServiceException, InterruptedException;
+
+	void forceContinuousScanning() throws RPLidarA1ServiceException;
 }

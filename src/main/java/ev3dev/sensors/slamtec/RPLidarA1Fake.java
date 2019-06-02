@@ -38,12 +38,13 @@ class RPLidarA1Fake implements RPLidarProvider
 	@Override
 	public Scan oneShotScan() throws RPLidarA1ServiceException
 	{
+		long start = System.currentTimeMillis();
 		final List<ScanDistance> distances = Collections.synchronizedList(new ArrayList<>());
 		for (int angle = 0; angle < 360; angle++)
 		{
 			distances.add(new ScanDistance(angle, new Float(Math.random() * 4000 + 1), 1, false));
 		}
-		return new Scan(distances);
+		return new Scan(distances, start, System.currentTimeMillis());
 	}
 
 	@Override
@@ -157,6 +158,13 @@ class RPLidarA1Fake implements RPLidarProvider
 	public Scan getNextScan() throws RPLidarA1ServiceException
 	{
 		return oneShotScan();
+	}
+
+	@Override
+	public void forceContinuousScanning() throws RPLidarA1ServiceException
+	{
+		// TODO Auto-generated method stub
+
 	}
 
 }
